@@ -13,6 +13,16 @@ class _BillCalculatorScreenState extends State<BillCalculatorScreen> {
     'Low Voltage Industrial',
     'Medium Voltage Industrial',
   ];
+  double getServiceCharge() {
+    final charges = serviceCharges[selectedCustomerType]![selectedPaymentType]!;
+
+    if (selectedCustomerType == 'Residential') {
+      String tier = consumedUnits <= 50 ? '≤50' : '>50';
+      return charges[tier]![selectedYear]![selectedQuarter]!;
+    } else {
+      return charges['all']![selectedYear]![selectedQuarter]!;
+    }
+  }
 
   // Payment types
   final List<String> paymentTypes = ['Prepaid', 'Postpaid'];
@@ -37,11 +47,94 @@ class _BillCalculatorScreenState extends State<BillCalculatorScreen> {
   double totalBill = 0.0;
 
   // Service charges by customer type and payment type (removed Street Lighting)
-  final Map<String, Map<String, double>> serviceCharges = {
-    'Residential': {'Prepaid': 15.97, 'Postpaid': 45.80},
-    'General Service': {'Prepaid': 65.00, 'Postpaid': 120.00},
-    'Low Voltage Industrial': {'Prepaid': 150.00, 'Postpaid': 250.00},
-    'Medium Voltage Industrial': {'Prepaid': 500.00, 'Postpaid': 800.00},
+  // Service charges per kWh from the tariff table
+  // Service charges per quarter (official 2024/25–2027/28 tariffs)
+  final Map<String, Map<String, Map<String, Map<String, Map<String, double>>>>>
+      serviceCharges = {
+    'Residential': {
+      'Postpaid': {
+        '≤50': {
+          '2024/25': {'Q1': 10.24, 'Q2': 10.47, 'Q3': 10.71, 'Q4': 10.95},
+          '2025/26': {'Q1': 11.19, 'Q2': 11.42, 'Q3': 11.66, 'Q4': 11.90},
+          '2026/27': {'Q1': 12.14, 'Q2': 12.37, 'Q3': 12.61, 'Q4': 12.85},
+          '2027/28': {'Q1': 13.08, 'Q2': 13.32, 'Q3': 13.56, 'Q4': 13.80},
+        },
+        '>50': {
+          '2024/25': {'Q1': 42.95, 'Q2': 43.90, 'Q3': 44.85, 'Q4': 45.80},
+          '2025/26': {'Q1': 46.75, 'Q2': 47.70, 'Q3': 48.65, 'Q4': 49.60},
+          '2026/27': {'Q1': 50.55, 'Q2': 51.50, 'Q3': 52.45, 'Q4': 53.40},
+          '2027/28': {'Q1': 54.35, 'Q2': 55.30, 'Q3': 56.25, 'Q4': 57.20},
+        },
+      },
+      'Prepaid': {
+        '≤50': {
+          '2024/25': {'Q1': 3.67, 'Q2': 3.84, 'Q3': 4.01, 'Q4': 4.18},
+          '2025/26': {'Q1': 4.36, 'Q2': 4.53, 'Q3': 4.70, 'Q4': 4.87},
+          '2026/27': {'Q1': 5.04, 'Q2': 5.21, 'Q3': 5.38, 'Q4': 5.55},
+          '2027/28': {'Q1': 5.72, 'Q2': 5.89, 'Q3': 6.07, 'Q4': 6.24},
+        },
+        '>50': {
+          '2024/25': {'Q1': 15.02, 'Q2': 15.33, 'Q3': 15.65, 'Q4': 15.97},
+          '2025/26': {'Q1': 16.28, 'Q2': 16.60, 'Q3': 16.92, 'Q4': 17.23},
+          '2026/27': {'Q1': 17.55, 'Q2': 17.87, 'Q3': 18.18, 'Q4': 18.50},
+          '2027/28': {'Q1': 18.82, 'Q2': 19.13, 'Q3': 19.45, 'Q4': 19.77},
+        },
+      },
+    },
+    'General Service': {
+      'Postpaid': {
+        'all': {
+          '2024/25': {'Q1': 55.19, 'Q2': 56.38, 'Q3': 57.57, 'Q4': 58.75},
+          '2025/26': {'Q1': 59.94, 'Q2': 61.13, 'Q3': 62.32, 'Q4': 63.51},
+          '2026/27': {'Q1': 64.70, 'Q2': 65.89, 'Q3': 67.07, 'Q4': 68.26},
+          '2027/28': {'Q1': 69.45, 'Q2': 70.64, 'Q3': 71.83, 'Q4': 73.02},
+        }
+      },
+      'Prepaid': {
+        'all': {
+          '2024/25': {'Q1': 19.31, 'Q2': 19.71, 'Q3': 20.12, 'Q4': 20.53},
+          '2025/26': {'Q1': 20.94, 'Q2': 21.34, 'Q3': 21.75, 'Q4': 22.16},
+          '2026/27': {'Q1': 22.57, 'Q2': 22.97, 'Q3': 23.38, 'Q4': 23.79},
+          '2027/28': {'Q1': 24.19, 'Q2': 24.60, 'Q3': 25.01, 'Q4': 25.42},
+        }
+      },
+    },
+    'Low Voltage Industrial': {
+      'Postpaid': {
+        'all': {
+          '2024/25': {'Q1': 55.19, 'Q2': 56.38, 'Q3': 57.57, 'Q4': 58.75},
+          '2025/26': {'Q1': 59.94, 'Q2': 61.13, 'Q3': 62.32, 'Q4': 63.51},
+          '2026/27': {'Q1': 64.70, 'Q2': 65.89, 'Q3': 67.07, 'Q4': 68.26},
+          '2027/28': {'Q1': 69.45, 'Q2': 70.64, 'Q3': 71.83, 'Q4': 73.02},
+        }
+      },
+      'Prepaid': {
+        'all': {
+          '2024/25': {'Q1': 55.19, 'Q2': 56.38, 'Q3': 57.57, 'Q4': 58.75},
+          '2025/26': {'Q1': 59.94, 'Q2': 61.13, 'Q3': 62.32, 'Q4': 63.51},
+          '2026/27': {'Q1': 64.70, 'Q2': 65.89, 'Q3': 67.07, 'Q4': 68.26},
+          '2027/28': {'Q1': 69.45, 'Q2': 70.64, 'Q3': 71.83, 'Q4': 73.02},
+        }
+      },
+    },
+    'Medium Voltage Industrial': {
+      'Postpaid': {
+        'all': {
+          '2024/25': {'Q1': 55.19, 'Q2': 56.38, 'Q3': 57.57, 'Q4': 58.75},
+          '2025/26': {'Q1': 59.94, 'Q2': 61.13, 'Q3': 62.32, 'Q4': 63.51},
+          '2026/27': {'Q1': 64.70, 'Q2': 65.89, 'Q3': 67.07, 'Q4': 68.26},
+          '2027/28': {'Q1': 69.45, 'Q2': 70.64, 'Q3': 71.83, 'Q4': 73.02},
+        }
+      },
+      'Prepaid': {
+        'all': {
+          '2024/25': {'Q1': 55.19, 'Q2': 56.38, 'Q3': 57.57, 'Q4': 58.75},
+          '2025/26': {'Q1': 59.94, 'Q2': 61.13, 'Q3': 62.32, 'Q4': 63.51},
+          '2026/27': {'Q1': 64.70, 'Q2': 65.89, 'Q3': 67.07, 'Q4': 68.26},
+          '2027/28': {'Q1': 69.45, 'Q2': 70.64, 'Q3': 71.83, 'Q4': 73.02},
+        }
+      },
+    },
   };
 
   // Tariff rates data structure (removed Street Lighting)
@@ -185,8 +278,7 @@ class _BillCalculatorScreenState extends State<BillCalculatorScreen> {
         }
 
         // Get service charge
-        serviceCharge =
-            serviceCharges[selectedCustomerType]![selectedPaymentType]!;
+        serviceCharge = getServiceCharge();
 
         // Calculate subtotal
         double subtotal = energyCharge + serviceCharge;
@@ -218,7 +310,7 @@ class _BillCalculatorScreenState extends State<BillCalculatorScreen> {
           children: [
             Icon(Icons.calculate, size: 32),
             SizedBox(width: 12),
-            Text("Ethiopian Electric Utility Bill Calculator"),
+            Expanded(child: Text("Ethiopian Electric Utility Bill Calculator")),
           ],
         ),
         centerTitle: false,
